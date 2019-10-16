@@ -46,6 +46,7 @@ fi
 r_flag=false
 f_flag=false
 
+
 print_conflicting() {
 	printf "Conflicting flags, -r used for removal, -f for creation \n"
 }
@@ -63,20 +64,9 @@ while getopts 'rf' flag; do
   esac
 done
 
-if [ r_flag = true ]
-then
-	echo "R flag set"
-fi
-if [ f_flag = true ]
-then
-	echo "F flag set"
-fi
 
-
-if [ r_flag = true -a f_flag = true ] 
-then
-	echo "This is the error place\n"
-	
+if [ "$r_flag" = "true" -a "$f_flag" = "true" ] 
+then	
 	print_conflicting ;
 	print_usage ;
 	exit 1 ;
@@ -84,10 +74,9 @@ fi
 
 # At this point, either r, or f, or neither is true. Checking each one can isolate each case.
 
-if [ f_flag ]
+if [ "$f_flag" = "true" ]
 then
 	# create a folder in some capacity
-
 	if [ "$#" -eq "2" ]
 	then
 		# CASE 1
@@ -111,7 +100,7 @@ then
 	if [ "$#" -eq "3" ]
 	then
 		# CASE 2
-		
+
 		# find out if the user put the flag in the right place:
 		if [ "$1" = "-f" ]
 		then
@@ -124,6 +113,9 @@ then
 			touch "$3" 
 			# open said file in Sublime
 			open -a "Sublime Text" "$3"
+		else
+			print_usage
+			exit 1
 		fi
 		exit 0;
 	fi
@@ -131,14 +123,36 @@ then
 	exit 1 ;
 fi
 
-if [ r_flag ]
+if [ "$r_flag" = "true" ]
 then
 	# remove file or folder
 
 	if [ "$#" -eq "2" ]
 	then
 		# CASE 3
-		
+
+                # find out if the user put the flag in the right place:
+                if [ "$1" = "-r" ]
+                then
+                        # first argument is -r
+                        # remove directory on second arg
+                        cd "$notes_folder"
+			                        
+			num_notes=$(ls -1 | wc -l)
+			num_notes_nw="$(echo "${num_notes}" | tr -d '[:space:]')"
+
+			read -r -p "Are you sure you want to delete $2 and all $num_notes_nw notes? [y/N] " response
+			case "$response" in
+				[yY][eE][sS]|[yY])	rm -rf $2 ;;
+    				*)  			exit 0 ;;
+			esac
+
+                        cd ~
+                else
+			print_usage
+                        exit 1
+                fi
+
 		exit 0;
 	fi
 
@@ -146,9 +160,27 @@ then
 	then
 		# CASE 4
 
+                # find out if the user put the flag in the right place:
+                if [ "$1" = "-r" ]
+                then
+                        # first argument is -r
+                        # remove file on third arg within directory on second arg
+                        cd "$notes_folder"
+			cd "$2"
+			                        
+			read -r -p "Are you sure you want to delete $3? [y/N] " response
+			case "$response" in
+				[yY][eE][sS]|[yY])	rm $3 ;;
+    				*)  			exit 0 ;;
+			esac
+
+                        cd ~
+                else
+			print_usage
+                        exit 1
+                fi
 		exit 0;
 	fi
-
 	print_usage ;
 	exit 1 ;
 fi
@@ -160,7 +192,32 @@ if [ "$#" -eq "2" ]
 then
 	# Create a file
 	
+	cd "$notes_folder"
 	
+	if [ -e "$1" ]
+	then
+		cd "$1"
+		touch "$2"
+		open -a "Sublime Text" "$2"
+		cd ~
+	else
+		echo "Folder does not exist"
+		print_usage
+		exit 1
+	fi
+			
+
+	exit 0;
+fi
+if [ "$#" -eq "1" ]
+then
+	# create a file in default
+	
+        cd "$default_notes"
+        # create file in that directory
+        touch "$1"
+        # open said file in Sublime
+        open -a "Sublime Text" "$1"
 
 	exit 0;
 fi
